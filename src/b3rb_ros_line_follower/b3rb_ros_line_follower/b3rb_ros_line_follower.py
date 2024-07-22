@@ -94,6 +94,7 @@ class LineFollower(Node):
 		self.ramp_detected = False
 		self.speed = 0.0
 		self.turn = 0.0
+		self.beta = 0.9
 
 		self.my_vel_timer = self.create_timer(
 			0.1, 
@@ -196,7 +197,11 @@ class LineFollower(Node):
 		
 		if turn>0.5:
 			speed = 0.2
-		self.rover_move_manual_mode(speed, turn)
+
+		self.speed = self.beta * self.speed + (1-self.beta) * speed
+		self.turn = self.beta * self.turn + (1-self.beta) * turn
+		self.get_logger().info(f"self.speed: {self.speed}, self.turn: {self.turn}, turn: {turn}, speed: {speed}")
+		self.rover_move_manual_mode(self.speed, self.turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.
 
