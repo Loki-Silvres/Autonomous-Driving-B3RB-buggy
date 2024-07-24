@@ -36,7 +36,7 @@ RIGHT_TURN = -1.0
 TURN_MIN = 0.0
 TURN_MAX = 1.0
 SPEED_MIN = 0.0
-SPEED_MAX = 0.5
+SPEED_MAX = 1.0
 SPEED_25_PERCENT = SPEED_MAX / 4
 SPEED_50_PERCENT = SPEED_25_PERCENT * 2
 SPEED_75_PERCENT = SPEED_25_PERCENT * 3
@@ -108,7 +108,7 @@ class LineFollower(Node):
 
 		self.speed += msg.linear.x
 		self.turn += msg.angular.z
-
+		self.get_logger().info(f"speed: {self.speed}, turn: {self.turn}")
 		if self.speed>SPEED_MAX:
 			self.speed = SPEED_MAX
 		if self.speed<-SPEED_MAX:
@@ -160,6 +160,8 @@ class LineFollower(Node):
 		half_width = vectors.image_width / 2
 		half_height = vectors.image_height / 2
 
+		self.get_logger().info(f"vectors:{vectors}")
+
 		# NOTE: participants may improve algorithm for line follower.
 		if (vectors.vector_count == 0):  # none.
 			pass
@@ -169,6 +171,9 @@ class LineFollower(Node):
 			deviation = vectors.vector_1[1].x - vectors.vector_1[0].x
 			turn = deviation / vectors.image_width
 
+			self.get_logger().info(f"deviation:{deviation}")
+
+
 		if (vectors.vector_count == 2):  # straight.
 			# Calculate the middle point of the x-components of the vectors.
 			middle_x_left = (vectors.vector_1[0].x + vectors.vector_1[1].x) / 2
@@ -176,6 +181,9 @@ class LineFollower(Node):
 			middle_x = (middle_x_left + middle_x_right) / 2
 			deviation_x = half_width - middle_x
 			turn = deviation_x / half_width
+
+			self.get_logger().info(f"middle_x_left:{middle_x_left}, middle_x_right:{middle_x_right}, middle_x:{middle_x}, deviation_x:{deviation_x}")
+
 
 			# middle_y_left = (vectors.vector_1[0].y + vectors.vector_1[1].y) / 2
 			# middle_y_right = (vectors.vector_2[0].y + vectors.vector_2[1].y) / 2
@@ -196,12 +204,12 @@ class LineFollower(Node):
 			print("obstacle detected")
 		
 		if turn>0.5:
-			speed = 0.2
+			speed = 0.2	
 
-		self.speed = self.beta * self.speed + (1-self.beta) * speed
-		self.turn = self.beta * self.turn + (1-self.beta) * turn
-		self.get_logger().info(f"self.speed: {self.speed}, self.turn: {self.turn}, turn: {turn}, speed: {speed}")
-		self.rover_move_manual_mode(self.speed, self.turn)
+		# self.speed = self.beta * self.speed + (1-self.beta) * speed
+		# self.turn = self.beta * self.turn + (1-self.beta) * turn
+		# self.get_logger().info(f"self.speed: {self.speed}, self.turn: {self.turn}, turn: {turn}, speed: {speed}")
+		# self.rover_move_manual_mode(self.speed, self.turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.
 
