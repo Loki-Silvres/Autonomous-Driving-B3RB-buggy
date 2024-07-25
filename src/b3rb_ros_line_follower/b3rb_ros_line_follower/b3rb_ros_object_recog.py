@@ -73,10 +73,13 @@ class ObjectRecognizer(Node):
 
 		# NOTE: participants need to implement logic for recognizing traffic signs.
 
-		lower = np.array([22, 93, 0])
-		upper = np.array([45, 255, 255])
-		mask = cv2.inRange(image[int(image.shape[0]*0.65):], lower, upper)
-		if np.sum(mask)>10:
+		lower_yellow = np.array([22, 93, 0])
+		upper_yellow = np.array([45, 255, 255])
+		lower_green = np.array([0,230, 0])
+		upper_green = np.array([15,255, 10])
+		yellow_mask = cv2.inRange(image[int(image.shape[0]*0.65):], lower_yellow, upper_yellow)
+		green_mask = cv2.inRange(image[int(image.shape[0]*0.65):], lower_green, upper_green)
+		if (np.sum(yellow_mask)>10) and not (np.sum(green_mask)>10):
 			bool_msg = Bool()
 			bool_msg.data = True
 			self.publisher_ramp_det.publish(bool_msg) 
