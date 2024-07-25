@@ -82,11 +82,11 @@ class ObjectRecognizer(Node):
 		if (np.sum(yellow_mask)>10) and not (np.sum(green_mask)>10):
 			bool_msg = Bool()
 			bool_msg.data = True
-			self.publisher_ramp_det.publish(bool_msg) 
+			# self.publisher_ramp_det.publish(bool_msg) 
 		else:
 			bool_msg = Bool()
 			bool_msg.data = False
-			self.publisher_ramp_det.publish(bool_msg) 
+			# self.publisher_ramp_det.publish(bool_msg) 
 
 		self.publisher_traffic.publish(traffic_status_message)
 

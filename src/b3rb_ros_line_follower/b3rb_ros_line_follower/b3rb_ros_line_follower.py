@@ -45,6 +45,7 @@ SPEED_75_PERCENT = SPEED_25_PERCENT * 3
 
 THRESHOLD_OBSTACLE_VERTICAL = 1.0
 THRESHOLD_OBSTACLE_HORIZONTAL = 0.25
+THRESHOLD_RAMP = 0.5
 
 MIN_FWD_VEL = 0.4
 MAX_FWD_VEL = 1.0
@@ -178,11 +179,13 @@ class LineFollower(Node):
 
 		if (vectors.vector_count == 1):  # curve.
 			# Calculate the magnitude of the x-component of the vector.
-			deviation = vectors.vector_1[1].x - vectors.vector_1[0].x
-			turn = deviation / vectors.image_width
-			speed = max(MIN_FWD_VEL, 0.8 - min(abs(turn), 0.9))
+			deviation_x = vectors.vector_1[1].x - vectors.vector_1[0].x
+			deviation_y = vectors.vector_1[1].y - vectors.vector_1[0].y
+			turn = deviation_x / vectors.image_width
+			# turn += deviation_y / vectors.image_height
+			speed = max(MIN_FWD_VEL, 0.9 - min(abs(turn), 0.9))
 
-			self.get_logger().info(f"deviation:{deviation}")
+			self.get_logger().info(f"deviation:{deviation_x}")
 
 
 		if (vectors.vector_count == 2):  # straight.
@@ -213,7 +216,7 @@ class LineFollower(Node):
 			speed = SPEED_MAX/5
 			self.time_now = time.time()
 			print("ramp/bridge detected")
-			self.get_logger().info("ramp/bridge detected")
+			# self.get_logger().info("ramp/bridge detected")
 
 		if self.obstacle_detected is True:
 			# TODO: participants need to decide action on detection of obstacle.
@@ -263,10 +266,17 @@ class LineFollower(Node):
 
 		# process front ranges.
 		angle = theta - PI / 2
+		self.get_logger().info(f"range: {front_ranges}")
+
 		for i in range(len(front_ranges)):
+			# self.get_logger().info(f"range: {front_ranges[i]}")
+			
 			if (front_ranges[i] < THRESHOLD_OBSTACLE_VERTICAL):
 				self.obstacle_detected = True
 				return
+			elif (front_ranges[i]< THRESHOLD_RAMP):
+				self.ramp_detected = True
+				self.get_logger().info("ramp/bridge detected")
 
 			angle += message.angle_increment
 
