@@ -46,6 +46,8 @@ SPEED_75_PERCENT = SPEED_25_PERCENT * 3
 THRESHOLD_OBSTACLE_VERTICAL = 1.0
 THRESHOLD_OBSTACLE_HORIZONTAL = 0.25
 
+MIN_FWD_VEL = 0.3
+MAX_FWD_VEL = 1.0
 
 class LineFollower(Node):
 	""" Initializes line follower node with the required publishers and subscriptions.
@@ -127,8 +129,6 @@ class LineFollower(Node):
 			self.turn = TURN_MAX
 		if self.turn< -TURN_MAX:
 			self.turn = -TURN_MAX
-		# self.speed = min(SPEED_MAX, max(SPEED_MIN, self.speed))
-		# self.turn = min(TURN_MAX, max(TURN_MIN, self.turn))
 
 
 	""" Operates the rover in manual mode by publishing on /cerebri/in/joy.
@@ -174,15 +174,13 @@ class LineFollower(Node):
 
 		# NOTE: participants may improve algorithm for line follower.
 		if (vectors.vector_count == 0):  # none.
-			speed = 0.1			
+			speed = MIN_FWD_VEL	
 
 		if (vectors.vector_count == 1):  # curve.
 			# Calculate the magnitude of the x-component of the vector.
 			deviation = vectors.vector_1[1].x - vectors.vector_1[0].x
 			turn = deviation / vectors.image_width
-			speed = max(0.1, 0.8 - min(abs(turn), 0.9))
-	
-
+			speed = max(MIN_FWD_VEL, 0.8 - min(abs(turn), 0.9))
 
 			self.get_logger().info(f"deviation:{deviation}")
 
@@ -221,8 +219,6 @@ class LineFollower(Node):
 			# TODO: participants need to decide action on detection of obstacle.
 			print("obstacle detected")
 		
-		# if turn>0.5:
-		# 	speed = 0.2	
 
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
 		self.turn = self.beta * self.turn + (1-self.beta) * turn
