@@ -18,7 +18,9 @@ import rclpy
 from rclpy.node import Node
 
 from sensor_msgs.msg import Joy
+from std_msgs.msg import Bool
 
+import time
 import math
 
 from synapse_msgs.msg import EdgeVectors
@@ -80,6 +82,11 @@ class LineFollower(Node):
 			'/scan',
 			self.lidar_callback,
 			QOS_PROFILE_DEFAULT)
+		self.subscription_ramp_det = self.create_subscription(
+			Bool,
+			'/ramp_detected',
+			self.ramp_det_callback,
+			QOS_PROFILE_DEFAULT)
 		self.vel_sub = self.create_subscription(
 			Twist,
 			'/my_vel',
@@ -95,12 +102,15 @@ class LineFollower(Node):
 		self.speed = 0.0
 		self.turn = 0.0
 		self.beta = 0.9
+		self.time_now = -100
 
 		self.my_vel_timer = self.create_timer(
 			0.1, 
 			self.my_timer_callback
 			)
 		
+	def ramp_det_callback(self, msg: Bool) -> None:
+		self.ramp_detected = msg.data
 	def my_timer_callback(self):
 		self.rover_move_manual_mode(self.speed, self.turn)
 
@@ -164,12 +174,15 @@ class LineFollower(Node):
 
 		# NOTE: participants may improve algorithm for line follower.
 		if (vectors.vector_count == 0):  # none.
-			pass
+			speed = 0.1			
 
 		if (vectors.vector_count == 1):  # curve.
 			# Calculate the magnitude of the x-component of the vector.
 			deviation = vectors.vector_1[1].x - vectors.vector_1[0].x
 			turn = deviation / vectors.image_width
+			speed = max(0.1, 0.8 - min(abs(turn), 0.9))
+	
+
 
 			self.get_logger().info(f"deviation:{deviation}")
 
@@ -181,6 +194,8 @@ class LineFollower(Node):
 			middle_x = (middle_x_left + middle_x_right) / 2
 			deviation_x = half_width - middle_x
 			turn = deviation_x / half_width
+
+			speed = 1 - min(abs(turn), 0.9)
 
 			self.get_logger().info(f"middle_x_left:{middle_x_left}, middle_x_right:{middle_x_right}, middle_x:{middle_x}, deviation_x:{deviation_x}")
 
@@ -195,21 +210,24 @@ class LineFollower(Node):
 			speed = SPEED_MIN
 			print("stop sign detected")
 
-		if self.ramp_detected is True:
+		if self.ramp_detected is True: # or (time.time()-self.time_now) < 2:
 			# TODO: participants need to decide action on detection of ramp/bridge.
+			speed = SPEED_MAX/5
+			self.time_now = time.time()
 			print("ramp/bridge detected")
+			self.get_logger().info("ramp/bridge detected")
 
 		if self.obstacle_detected is True:
 			# TODO: participants need to decide action on detection of obstacle.
 			print("obstacle detected")
 		
-		if turn>0.5:
-			speed = 0.2	
+		# if turn>0.5:
+		# 	speed = 0.2	
 
-		# self.speed = self.beta * self.speed + (1-self.beta) * speed
-		# self.turn = self.beta * self.turn + (1-self.beta) * turn
-		# self.get_logger().info(f"self.speed: {self.speed}, self.turn: {self.turn}, turn: {turn}, speed: {speed}")
-		# self.rover_move_manual_mode(self.speed, self.turn)
+		self.speed = self.beta * self.speed + (1-self.beta) * speed
+		self.turn = self.beta * self.turn + (1-self.beta) * turn
+		self.get_logger().info(f"self.speed: {self.speed}, self.turn: {self.turn}, turn: {turn}, speed: {speed}, self.ramp_detected: {self.ramp_detected}")
+		self.rover_move_manual_mode(self.speed, self.turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.
 

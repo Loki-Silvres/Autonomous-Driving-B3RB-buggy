@@ -37,7 +37,7 @@ RED_COLOR = (0, 0, 255)
 BLUE_COLOR = (255, 0, 0)
 GREEN_COLOR = (0, 255, 0)
 
-VECTOR_IMAGE_HEIGHT_PERCENTAGE = 0.40  # Bottom portion of image to be analyzed for vectors.
+VECTOR_IMAGE_HEIGHT_PERCENTAGE = 0.30  # Bottom portion of image to be analyzed for vectors.
 VECTOR_MAGNITUDE_MINIMUM = 2.0
 
 

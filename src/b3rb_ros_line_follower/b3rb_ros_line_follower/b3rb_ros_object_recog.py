@@ -17,6 +17,7 @@
 import rclpy
 from rclpy.node import Node
 from synapse_msgs.msg import TrafficStatus
+from std_msgs.msg import Bool
 
 import cv2
 import numpy as np
@@ -47,6 +48,12 @@ class ObjectRecognizer(Node):
 			TrafficStatus,
 			'/traffic_status',
 			QOS_PROFILE_DEFAULT)
+		
+		self.publisher_ramp_det = self.create_publisher(
+			Bool,
+			'/ramp_detected',
+			QOS_PROFILE_DEFAULT)
+		
 
 	""" Analyzes the image received from /camera/image_raw/compressed to detect traffic signs.
 		Publishes the existence of traffic signs in the image on the /traffic_status topic.
@@ -65,6 +72,18 @@ class ObjectRecognizer(Node):
 		traffic_status_message = TrafficStatus()
 
 		# NOTE: participants need to implement logic for recognizing traffic signs.
+
+		lower = np.array([22, 93, 0])
+		upper = np.array([45, 255, 255])
+		mask = cv2.inRange(image[int(image.shape[0]*0.65):], lower, upper)
+		if np.sum(mask)>10:
+			bool_msg = Bool()
+			bool_msg.data = True
+			self.publisher_ramp_det.publish(bool_msg) 
+		else:
+			bool_msg = Bool()
+			bool_msg.data = False
+			self.publisher_ramp_det.publish(bool_msg) 
 
 		self.publisher_traffic.publish(traffic_status_message)
 
