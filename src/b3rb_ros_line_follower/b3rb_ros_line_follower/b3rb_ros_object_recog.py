@@ -82,15 +82,31 @@ class ObjectRecognizer(Node):
 		if (np.sum(yellow_mask)>10) and not (np.sum(green_mask)>10):
 			bool_msg = Bool()
 			bool_msg.data = True
-			# self.publisher_ramp_det.publish(bool_msg) 
+			self.publisher_ramp_det.publish(bool_msg) 
 		else:
 			bool_msg = Bool()
 			bool_msg.data = False
-			# self.publisher_ramp_det.publish(bool_msg) 
+			self.publisher_ramp_det.publish(bool_msg) 
 
 		self.publisher_traffic.publish(traffic_status_message)
 
+		stop_sign_img = cv2.imread('/home/loki/snap/foxglove-studio/103/stop.png')
+		template = cv2.GaussianBlur(stop_sign_img, (3, 3), 0)
+		template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+		template = cv2.Canny(template, 50, 170)
+		blur = cv2.GaussianBlur(image, (3, 3), 0) 
+		gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
+		edged = cv2.Canny(gray, 50, 170)
+		result = cv2.matchTemplate(edged, template, cv2.TM_CCOEFF_NORMED)
+		(_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
 
+		if maxVal > 0.8:
+			traffic_status_message.stop_sign = True
+		# else:
+		# 	traffic_status_message.stop_sign = False
+		self.publisher_traffic.publish(traffic_status_message)
+			
+	
 def main(args=None):
 	rclpy.init(args=args)
 
