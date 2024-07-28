@@ -1,3 +1,4 @@
+
 # Copyright 2024 NXP
 
 # Copyright 2016 Open Source Robotics Foundation, Inc.
@@ -121,7 +122,7 @@ class LineFollower(Node):
 
 		self.speed += msg.linear.x
 		self.turn += msg.angular.z
-		self.get_logger().info(f"speed: {self.speed}, turn: {self.turn}")
+		self.get_logger().info(f"speed: {self.speed:.2f}, turn: {self.turn:.3f}")
 		if self.speed>SPEED_MAX:
 			self.speed = SPEED_MAX
 		if self.speed<-SPEED_MAX:
@@ -175,7 +176,7 @@ class LineFollower(Node):
 
 		# NOTE: participants may improve algorithm for line follower.
 		if (vectors.vector_count == 0):  # none.
-			speed = MIN_FWD_VEL	
+			speed = 0.2
 
 		if (vectors.vector_count == 1):  # curve.
 			# Calculate the magnitude of the x-component of the vector.
@@ -198,7 +199,7 @@ class LineFollower(Node):
 
 			speed = 1 - min(abs(turn), 0.9)
 
-			self.get_logger().info(f"middle_x_left:{middle_x_left}, middle_x_right:{middle_x_right}, middle_x:{middle_x}, deviation_x:{deviation_x}")
+			self.get_logger().info(f"middle_x_left:{middle_x_left:.2f}, middle_x_right:{middle_x_right:.2f}, middle_x:{middle_x:.2f}, deviation_x:{deviation_x:.2f}")
 
 
 			# middle_y_left = (vectors.vector_1[0].y + vectors.vector_1[1].y) / 2
@@ -213,7 +214,7 @@ class LineFollower(Node):
 
 		if self.ramp_detected is True: # or (time.time()-self.time_now) < 2:
 			# TODO: participants need to decide action on detection of ramp/bridge.
-			speed = SPEED_MAX/5
+			speed = max(SPEED_MAX/4, speed)
 			self.time_now = time.time()
 			print("ramp/bridge detected")
 			# self.get_logger().info("ramp/bridge detected")
@@ -225,7 +226,7 @@ class LineFollower(Node):
 
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
 		self.turn = self.beta * self.turn + (1-self.beta) * turn
-		self.get_logger().info(f"self.speed: {self.speed}, self.turn: {self.turn}, turn: {turn}, speed: {speed}, self.ramp_detected: {self.ramp_detected}")
+		self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, turn: {turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}")
 		self.rover_move_manual_mode(self.speed, self.turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.
@@ -266,7 +267,7 @@ class LineFollower(Node):
 
 		# process front ranges.
 		angle = theta - PI / 2
-		self.get_logger().info(f"range: {front_ranges}")
+		# self.get_logger().info(f"range: {front_ranges}")
 
 		for i in range(len(front_ranges)):
 			# self.get_logger().info(f"range: {front_ranges[i]}")
@@ -274,9 +275,9 @@ class LineFollower(Node):
 			if (front_ranges[i] < THRESHOLD_OBSTACLE_VERTICAL):
 				self.obstacle_detected = True
 				return
-			elif (front_ranges[i]< THRESHOLD_RAMP):
-				self.ramp_detected = True
-				self.get_logger().info("ramp/bridge detected")
+			# elif (front_ranges[i]< THRESHOLD_RAMP):
+			# 	self.ramp_detected = True
+			# 	self.get_logger().info("ramp/bridge detected")
 
 			angle += message.angle_increment
 
