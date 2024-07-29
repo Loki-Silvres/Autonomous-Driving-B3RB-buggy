@@ -75,6 +75,12 @@ class EdgeVectorsPublisher(Node):
 			"/debug_images/vector_image",
 			QOS_PROFILE_DEFAULT)
 
+		# Publisher for transformed image (for debug purposes).
+		self.publisher_transformed_image = self.create_publisher(
+			CompressedImage,
+			"/debug_images/transformed_image",
+			QOS_PROFILE_DEFAULT)
+		
 		self.image_height = 0
 		self.image_width = 0
 		self.lower_image_height = 0
@@ -89,6 +95,7 @@ class EdgeVectorsPublisher(Node):
 		Returns:
 			None
 	"""
+
 	def publish_debug_image(self, publisher, image):
 		message = CompressedImage()
 		_, encoded_data = cv2.imencode('.jpg', image)
@@ -214,9 +221,13 @@ class EdgeVectorsPublisher(Node):
 				vectors_inst[0][0][1] += self.upper_image_height
 				vectors_inst[0][1][1] += self.upper_image_height
 				final_vectors.append(vectors_inst[0][:2])
-
+		transform  = cv2.getPerspectiveTransform(np.float32([[self.image_width/3, self.image_height/2], [self.image_width*0.67, self.image_height/2], [0, self.image_height],[self.image_width, self.image_height]]), 
+										   np.float32([[0, 0], [self.image_width, 0], [0, self.image_height], [self.image_width, self.image_height]]))
+		transform_image = cv2.warpPerspective(image, transform, (self.image_width, self.image_height))
 		self.publish_debug_image(self.publisher_thresh_image, thresh)
 		self.publish_debug_image(self.publisher_vector_image, image)
+		self.publish_debug_image(self.publisher_transformed_image, transform_image)
+
 
 		return final_vectors
 

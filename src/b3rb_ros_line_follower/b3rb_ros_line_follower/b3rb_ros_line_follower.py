@@ -209,6 +209,7 @@ class LineFollower(Node):
 
 		if (self.traffic_status.stop_sign is True):
 			speed = SPEED_MIN
+
 			print("stop sign detected")
 
 		if self.ramp_detected is True: # or (time.time()-self.time_now) < 2:
@@ -225,7 +226,7 @@ class LineFollower(Node):
 
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
 		self.turn = self.beta * self.turn + (1-self.beta) * turn
-		self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, turn: {turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}")
+		self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, turn: {turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}, self.traffic_status.stop_sign: {self.traffic_status.stop_sign}")
 		self.rover_move_manual_mode(self.speed, self.turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.

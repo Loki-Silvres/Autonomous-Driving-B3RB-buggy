@@ -19,6 +19,9 @@ from rclpy.node import Node
 from synapse_msgs.msg import TrafficStatus
 from std_msgs.msg import Bool
 
+import torch
+from PIL import Image
+from torchvision import transforms
 import cv2
 import numpy as np
 
@@ -53,7 +56,25 @@ class ObjectRecognizer(Node):
 			Bool,
 			'/ramp_detected',
 			QOS_PROFILE_DEFAULT)
-		
+		self.vgg_model = torch.hub.load('pytorch/vision:v0.10.0', 'vgg11', pretrained=True)
+		self.vgg_model.classifier = torch.nn.Identity(4096)
+
+		# self.vgg_model.classifier = torch.nn.Sequential(*[self.vgg_model.classifier[i] for i in range(4)])
+		self.template = Image.open("/home/loki/snap/foxglove-studio/103/stop_sign_5.png").convert('RGB')
+		with torch.no_grad():
+			self.stop_emb = self.vgg_model(self.preprocess_img(self.template))
+	
+	def preprocess_img(self, img):
+		preprocess = transforms.Compose([
+			transforms.Resize(224),
+			transforms.CenterCrop(224),
+			transforms.ToTensor(),
+			transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+		])
+		input_tensor = preprocess(img)
+		input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
+		input_batch = input_batch
+		return input_batch 
 
 	""" Analyzes the image received from /camera/image_raw/compressed to detect traffic signs.
 		Publishes the existence of traffic signs in the image on the /traffic_status topic.
@@ -90,21 +111,29 @@ class ObjectRecognizer(Node):
 
 		self.publisher_traffic.publish(traffic_status_message)
 
-		stop_sign_img = cv2.imread('/home/loki/snap/foxglove-studio/103/stop.png')
-		template = cv2.GaussianBlur(stop_sign_img, (3, 3), 0)
-		template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-		template = cv2.Canny(template, 50, 170)
-		blur = cv2.GaussianBlur(image, (3, 3), 0) 
-		gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
-		edged = cv2.Canny(gray, 50, 170)
-		result = cv2.matchTemplate(edged, template, cv2.TM_CCOEFF_NORMED)
-		(_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
+		# loss = 1
+		# with torch.no_grad():
+		# 	img_emb = self.vgg_model(self.preprocess_img(Image.fromarray(image[:,:,::-1], mode='RGB')))
+		# 	loss = np.e ** -(torch.mean( (img_emb-self.stop_emb)**2 ))
+		# self.get_logger().info(f"loss: {loss}")
+		# if loss > 0.55:
+		# 	traffic_status_message.stop_sign = True
 
-		if maxVal > 0.8:
-			traffic_status_message.stop_sign = True
-		# else:
-		# 	traffic_status_message.stop_sign = False
-		self.publisher_traffic.publish(traffic_status_message)
+		# stop_sign_img = cv2.imread('/home/loki/snap/foxglove-studio/103/stop.png')
+		# template = cv2.GaussianBlur(stop_sign_img, (3, 3), 0)
+		# template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+		# template = cv2.Canny(template, 50, 170)
+		# blur = cv2.GaussianBlur(image, (3, 3), 0) 
+		# gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
+		# edged = cv2.Canny(gray, 50, 170)
+		# result = cv2.matchTemplate(edged, template, cv2.TM_CCOEFF_NORMED)
+		# (_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
+
+		# if maxVal > 0.8:
+		# 	traffic_status_message.stop_sign = True
+		# # else:
+		# # 	traffic_status_message.stop_sign = False
+		# self.publisher_traffic.publish(traffic_status_message)
 			
 	
 def main(args=None):
