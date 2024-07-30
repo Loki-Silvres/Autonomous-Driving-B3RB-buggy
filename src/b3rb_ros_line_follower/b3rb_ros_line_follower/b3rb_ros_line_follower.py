@@ -189,8 +189,8 @@ class LineFollower(Node):
 		# self.get_logger().info(f"vectors:{vectors}")
 
 		# NOTE: participants may improve algorithm for line follower.
-		if (vectors.vector_count == 0):  # none.
-			speed = 0.2
+		if (vectors.vector_count == 0) and (self.obstacle_detected==False):  # none.
+			speed = 0.15
 
 		if (vectors.vector_count == 1):  # curve.
 			# Calculate the magnitude of the x-component of the vector.
@@ -224,7 +224,7 @@ class LineFollower(Node):
 
 		if (self.traffic_status.stop_sign is True):
 			speed = SPEED_MIN
-			print("stop sign detected")
+			self.get_logger().info("stop sign detected")
 
 		if self.ramp_detected is True: # or (time.time()-self.time_now) < 2:
 			# TODO: participants need to decide action on detection of ramp/bridge.
@@ -237,6 +237,7 @@ class LineFollower(Node):
 			# TODO: participants need to decide action on detection of obstacle.
 			# print("obstacle detected")
 			turn = self.value
+			speed = SPEED_50_PERCENT
 			self.get_logger().info(f"obstacle detected, turn: {self.value:.3f}")
 		
 
@@ -265,6 +266,8 @@ class LineFollower(Node):
 		Returns:
 			None
 	"""
+	def norm_func(self,num):
+		return math.exp(-num**2/2)/math.sqrt(1.2*math.pi)
 	def lidar_callback(self, message: LaserScan):
 		# TODO: participants need to implement logic for detection of ramps and obstacles.
 		for i in range(len(message.ranges)):
@@ -324,16 +327,26 @@ class LineFollower(Node):
 		value = 0
 		self.value = 0
 		self.obstacle_detected = False
+		# for time when obstacle in front 
 		for i in range(len(front_ranges)):
-			self.get_logger().info("front_ranges: {}".format(front_ranges[i]))
-			if(front_ranges[i] < THRESHOLD_OBSTACLE_VERTICAL):
+			if(front_ranges[i] < THRESHOLD_RAMP and front_ranges[i] > THRESHOLD_OBSTACLE_HORIZONTAL):
 				self.obstacle_detected = True
+				self.get_logger().info("obstacle detected")
 			else:
 				if(i<len(front_ranges)/2):
-					value += front_ranges[i]/((i+1)*10)
+					value += -self.norm_func(i)
 				else:
-					value += -front_ranges[i]/((i+1)*10)
+					value += self.norm_func(i)
 			angle += message.angle_increment
+
+		#for the time when obstacles and no line	
+		for i in range(len(side_ranges_left)):
+			if(side_ranges_left[i]<THRESHOLD_OBSTACLE_HORIZONTAL or side_ranges_left[i]<THRESHOLD_OBSTACLE_HORIZONTAL):
+				self.get_logger().info("obstacle detected")
+				self.obstacle_detected = True
+				value = side_ranges_left[i]-side_ranges_right[i]
+			angle += message.angle_increment
+
 		self.value = value/10
 
 		#---------commment till here to remove Aman's code-------------
