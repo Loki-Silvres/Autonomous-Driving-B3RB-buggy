@@ -22,6 +22,7 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool
 
 import time
+import numpy as np
 import math
 
 from synapse_msgs.msg import EdgeVectors
@@ -97,6 +98,11 @@ class LineFollower(Node):
 			self.vel_callback,
 			QOS_PROFILE_DEFAULT
 		)
+		self.publish_front_lidar = self.create_publisher(
+			LaserScan,
+			'/front_scan',
+			QOS_PROFILE_DEFAULT
+			)
 
 		self.traffic_status = TrafficStatus()
 
@@ -107,12 +113,20 @@ class LineFollower(Node):
 		self.turn = 0.0
 		self.beta = 0.9
 		self.time_now = -100
+		# self.free_ranges = []/
+		#-----for Aman's code-----
+		self.value = 0
+		# ------till here---------
 
 		self.my_vel_timer = self.create_timer(
 			0.1, 
 			self.my_timer_callback
 			)
-		
+		#trying to get the free space using else
+		# self.min = 1e5
+		# self.max = 0
+
+
 	def ramp_det_callback(self, msg: Bool) -> None:
 		self.ramp_detected = msg.data
 	def my_timer_callback(self):
@@ -172,7 +186,7 @@ class LineFollower(Node):
 		half_width = vectors.image_width / 2
 		half_height = vectors.image_height / 2
 
-		self.get_logger().info(f"vectors:{vectors}")
+		# self.get_logger().info(f"vectors:{vectors}")
 
 		# NOTE: participants may improve algorithm for line follower.
 		if (vectors.vector_count == 0):  # none.
@@ -186,7 +200,7 @@ class LineFollower(Node):
 			# turn += deviation_y / vectors.image_height
 			speed = max(MIN_FWD_VEL, 0.9 - min(abs(turn), 0.9))
 
-			self.get_logger().info(f"deviation:{deviation_x}")
+			# self.get_logger().info(f"deviation:{deviation_x}")
 
 
 		if (vectors.vector_count == 2):  # straight.
@@ -199,7 +213,7 @@ class LineFollower(Node):
 
 			speed = 1 - min(abs(turn), 0.9)
 
-			self.get_logger().info(f"middle_x_left:{middle_x_left:.2f}, middle_x_right:{middle_x_right:.2f}, middle_x:{middle_x:.2f}, deviation_x:{deviation_x:.2f}")
+			# self.get_logger().info(f"middle_x_left:{middle_x_left:.2f}, middle_x_right:{middle_x_right:.2f}, middle_x:{middle_x:.2f}, deviation_x:{deviation_x:.2f}")
 
 
 			# middle_y_left = (vectors.vector_1[0].y + vectors.vector_1[1].y) / 2
@@ -221,12 +235,14 @@ class LineFollower(Node):
 
 		if self.obstacle_detected is True:
 			# TODO: participants need to decide action on detection of obstacle.
-			print("obstacle detected")
+			# print("obstacle detected")
+			turn = self.value
+			self.get_logger().info(f"obstacle detected, turn: {self.value:.3f}")
 		
 
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
 		self.turn = self.beta * self.turn + (1-self.beta) * turn
-		self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, turn: {turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}")
+		# self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, turn: {turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}")
 		self.rover_move_manual_mode(self.speed, self.turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.
@@ -239,6 +255,7 @@ class LineFollower(Node):
 	"""
 	def traffic_status_callback(self, message):
 		self.traffic_status = message
+		
 
 	""" Analyzes LIDAR data received from /scan topic for detecting ramps/bridges & obstacles.
 
@@ -248,15 +265,19 @@ class LineFollower(Node):
 		Returns:
 			None
 	"""
-	def lidar_callback(self, message):
+	def lidar_callback(self, message: LaserScan):
 		# TODO: participants need to implement logic for detection of ramps and obstacles.
-
+		for i in range(len(message.ranges)):
+			if math.isinf(message.ranges[i]):
+				message.ranges[i] = 10.0
 		shield_vertical = 4
 		shield_horizontal = 1
 		theta = math.atan(shield_vertical / shield_horizontal)
+		resolution = 2*math.pi / len(message.ranges)
 
 		# Get the middle half of the ranges array returned by the LIDAR.
 		length = float(len(message.ranges))
+
 		ranges = message.ranges[int(length / 4): int(3 * length / 4)]
 
 		# Separate the ranges into the part in the front and the part on the sides.
@@ -265,34 +286,94 @@ class LineFollower(Node):
 		side_ranges_right = ranges[0: int(length * theta / PI)]
 		side_ranges_left = ranges[int(length * (PI - theta) / PI):]
 
+
+		# message.ranges = [i/100 for i in range(len(message.ranges))]
+		# self.publish_front_lidar.publish(message)
+
+
+		# polars =[]
+		# for i in range(len(message.ranges)):
+		# 	theta_ = i * resolution
+		# 	r = message.ranges[i]
+		# 	polar = [r, theta_]
+		# 	polars.append(polar)
+		
+		# self.get_logger().info(f'{int(length * theta / PI), int(length * (PI - theta) / PI)}')
+		# polars = polars[int(length / 4): int(3 * length / 4)]
+		# front_polars = polars[int(length * theta / PI): int(length * (PI - theta) / PI)]
+		# front_carts = [[front_polars[i][0] * math.cos(front_polars[i][1]), front_polars[i][0] * math.sin(front_polars[i][1])] for i in range(len(front_polars))]
+		# free_indices = [ i for i in range(len(front_carts)) if front_carts[i][1] > THRESHOLD_OBSTACLE_VERTICAL]		
+
+		# # self.free_ranges = 
+		# self.lidar_dev = np.mean(free_indices)
+		# self.get_logger().info(f"front_ranges:{front_ranges}\nfront_polars:{front_polars}\nfront_carts:{front_carts}")
+		# self.get_logger().info(f"\n\nmean:{self.lidar_dev}, free_indices:{free_indices}  \n\n")
+
+		# front_msg = message
+		# for i in range(int(length / 4)+ int(length * (PI - theta) / PI), len(front_msg.ranges)):
+		# 	front_msg.ranges[i] = 10.0
+
+		# for i in range(len(front_msg.ranges[:int(length / 4)+int(length * theta / PI)])):
+
+		# 	front_msg.ranges[i] = 10.0
+
+		# self.publish_front_lidar.publish(front_msg)
 		# process front ranges.
 		angle = theta - PI / 2
-		# self.get_logger().info(f"range: {front_ranges}")
-
-		for i in range(len(front_ranges)):
-			# self.get_logger().info(f"range: {front_ranges[i]}")
-			
-			if (front_ranges[i] < THRESHOLD_OBSTACLE_VERTICAL):
-				self.obstacle_detected = True
-				return
-			# elif (front_ranges[i]< THRESHOLD_RAMP):
-			# 	self.ramp_detected = True
-			# 	self.get_logger().info("ramp/bridge detected")
-
-			angle += message.angle_increment
-
-		# process side ranges.
-		side_ranges_left.reverse()
-		for side_ranges in [side_ranges_left, side_ranges_right]:
-			angle = 0.0
-			for i in range(len(side_ranges)):
-				if (side_ranges[i] < THRESHOLD_OBSTACLE_HORIZONTAL):
-					self.obstacle_detected = True
-					return
-
-				angle += message.angle_increment
-
+		# --------------Aman's trial code----------------------------
+		value = 0
+		self.value = 0
 		self.obstacle_detected = False
+		for i in range(len(front_ranges)):
+			self.get_logger().info("front_ranges: {}".format(front_ranges[i]))
+			if(front_ranges[i] < THRESHOLD_OBSTACLE_VERTICAL):
+				self.obstacle_detected = True
+			else:
+				if(i<len(front_ranges)/2):
+					value += front_ranges[i]/((i+1)*10)
+				else:
+					value += -front_ranges[i]/((i+1)*10)
+			angle += message.angle_increment
+		self.value = value/10
+
+		#---------commment till here to remove Aman's code-------------
+
+		
+
+		# self.get_logger().info("length: {}".format(front))
+		# for i in range(len(front_ranges)):
+
+		# 	angle += message.angle_increment
+
+
+		# 	self.get_logger().info("max:{}, min:{},obstacle detected:{}".format(max, min,self.obstacle_detected))
+		# 	if (front_ranges[i] < THRESHOLD_OBSTACLE_VERTICAL):
+				
+		# 		self.obstacle_detected = True
+		# 		# return #TODO: check if this is needed
+		# 	else:
+
+		# 		if (i< self.min):
+		# 			self.min = i
+		# 		if (i> self.max):
+		# 			self.max = i
+		# 	# elif (front_ranges[i]< THRESHOLD_RAMP):
+		# 	# 	self.ramp_detected = True
+		# 	# 	self.get_logger().info("ramp/bridge detected")
+
+
+		# # process side ranges.
+		# side_ranges_left.reverse()
+		# for side_ranges in [side_ranges_left, side_ranges_right]:
+		# 	angle = 0.0
+		# 	for i in range(len(side_ranges)):
+		# 		if (side_ranges[i] < THRESHOLD_OBSTACLE_HORIZONTAL):
+		# 			self.obstacle_detected = True
+		# 			return
+
+		# 		angle += message.angle_increment
+
+		# self.obstacle_detected = False
 
 
 def main(args=None):
