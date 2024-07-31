@@ -91,13 +91,12 @@ class ObjectRecognizer(Node):
 
 		#--------Aman's trial code---------
 
-		# lower_red = np.array([0,0,65])
-		# upper_red = np.array([0,5,80])
-		# red_mask = cv2.inRange(image[int(image.shape[0]*0.65):], lower_red, upper_red)
-		# if (np.sum(red_mask)>10):
-		# 	traffic_status_message.stop_sign = True
-		# else:
-		# 	traffic_status_message.stop_sign = False
+		lower_red = np.array([0,0,65])
+		upper_red = np.array([0,5,80])
+		red_mask = cv2.inRange(image[int(image.shape[0]*0.65):], lower_red, upper_red)
+		if (np.sum(red_mask)>10):
+			traffic_status_message.stop_sign = True
+			
 
 		#-------trial code till here-----------
 		self.publisher_traffic.publish(traffic_status_message)

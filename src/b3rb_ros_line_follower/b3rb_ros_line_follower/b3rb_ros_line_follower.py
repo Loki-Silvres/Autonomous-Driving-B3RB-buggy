@@ -179,8 +179,8 @@ class LineFollower(Node):
 			None
 	"""
 	def edge_vectors_callback(self, message):
-		speed = SPEED_MAX
-		turn = TURN_MIN
+		speed = self.speed
+		turn = self.turn
 
 		vectors = message
 		half_width = vectors.image_width / 2
@@ -196,9 +196,10 @@ class LineFollower(Node):
 			# Calculate the magnitude of the x-component of the vector.
 			deviation_x = vectors.vector_1[1].x - vectors.vector_1[0].x
 			deviation_y = vectors.vector_1[1].y - vectors.vector_1[0].y
-			turn = deviation_x / vectors.image_width
+			turn = deviation_x / vectors.image_width 
 			# turn += deviation_y / vectors.image_height
 			speed = max(MIN_FWD_VEL, 0.9 - min(abs(turn), 0.9))
+			turn *= 1.1
 
 			# self.get_logger().info(f"deviation:{deviation_x}")
 
@@ -228,7 +229,8 @@ class LineFollower(Node):
 
 		if self.ramp_detected is True: 
 			# TODO: participants need to decide action on detection of ramp/bridge.
-			speed = max(SPEED_MAX/4, speed)
+			# speed = max(SPEED_MAX/4, speed)
+			speed = 0.6
 			self.time_now = time.time()
 			print("ramp/bridge detected")
 			# self.get_logger().info("ramp/bridge detected")
@@ -244,7 +246,7 @@ class LineFollower(Node):
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
 		self.turn = self.beta * self.turn + (1-self.beta) * turn
 		# self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, turn: {turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}")
-		self.rover_move_manual_mode(self.speed, self.turn)
+		self.rover_move_manual_mode(self.speed, turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.
 
