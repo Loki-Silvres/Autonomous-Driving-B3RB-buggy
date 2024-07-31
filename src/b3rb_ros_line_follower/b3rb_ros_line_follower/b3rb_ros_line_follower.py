@@ -226,7 +226,7 @@ class LineFollower(Node):
 			speed = SPEED_MIN
 			self.get_logger().info("stop sign detected")
 
-		if self.ramp_detected is True: # or (time.time()-self.time_now) < 2:
+		if self.ramp_detected is True: 
 			# TODO: participants need to decide action on detection of ramp/bridge.
 			speed = max(SPEED_MAX/4, speed)
 			self.time_now = time.time()
