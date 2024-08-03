@@ -239,8 +239,8 @@ class LineFollower(Node):
 			# TODO: participants need to decide action on detection of obstacle.
 			# print("obstacle detected")
 			turn = self.value
-			speed = SPEED_50_PERCENT
-			self.get_logger().info(f"obstacle detected, turn: {self.value:.3f}")
+			speed = 0.25
+			self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
 		
 
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
@@ -341,14 +341,23 @@ class LineFollower(Node):
 					value += self.norm_func(i)
 			angle += message.angle_increment
 
-		#for the time when obstacles and no line	
+		#for the time when obstacles and no line
+		left_avg = 0
+		right_avg = 0	
 		for i in range(len(side_ranges_left)):
 			if(side_ranges_left[i]<THRESHOLD_OBSTACLE_HORIZONTAL or side_ranges_left[i]<THRESHOLD_OBSTACLE_HORIZONTAL):
-				self.get_logger().info("obstacle detected")
+				self.get_logger().info("obstacle detected on left")
 				self.obstacle_detected = True
-				value = side_ranges_left[i]-side_ranges_right[i]
+				left_avg += side_ranges_left[i]
 			angle += message.angle_increment
-
+		for i in range(len(side_ranges_right)):
+			if(side_ranges_right[i]<THRESHOLD_OBSTACLE_HORIZONTAL or side_ranges_right[i]<THRESHOLD_OBSTACLE_HORIZONTAL):
+				self.get_logger().info("obstacle detected on right")
+				self.obstacle_detected = True
+				right_avg += side_ranges_right[i]
+			angle += message.angle_increment
+		# value = -value
+		if((left_avg-right_avg)!=0) :value = (-left_avg+right_avg)
 		self.value = value/10
 
 		#---------commment till here to remove Aman's code-------------

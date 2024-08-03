@@ -1,0 +1,126 @@
+{
+    "track":{
+        "pose":"0 2.245 0 0 0 1.55",
+        "type": "Raceway_1"
+    },
+    "finish":{
+        "pose":"-5.624240 -1.994640 0.007000 0 0 -0.200000",
+        "type": "finish_line"
+    },
+    "stop_sign":{
+        "pose":"-5.1 -2.04 0.147000 0 0 -0.200000",
+        "type": "stop_sign"
+    },
+    "start_sign":{
+        "pose":"-4.252800 -1.737550 0.147000 0 0 -2.200000",
+        "type": "start_sign"
+    },
+    "start_point_1":{
+        "pose":"-4.552800 -1.566710 0.100000 0 0 -1.700000",
+        "type": "start_point"
+    },
+    "start_point_2":{
+        "pose":"-4.552800 -2.676710 0.100000 0 0 -1.700000",
+        "type": "start_point"
+    },
+    "barricade_1":{
+        "pose":"5.79 3.513550 0.081000 0 -0.100000 -0.300000",
+        "type": "barricade"
+    },
+    "barricade_3":{
+        "pose":"4.490680 3.013550 0.081000 0 -0.100000 -0.300000",
+        "type": "barricade"
+    },
+    "barricade_6":{
+        "pose":"5.29 2.082410 0.081000 0 -0.100000 -0.300000",
+        "type": "barricade"
+    },
+    "barricade_7":{
+        "pose":"3.913470 1.539040 0.081000 0 -0.100000 -0.300000",
+        "type": "barricade"
+    },
+    "barricade_8":{
+        "pose":"5.357740 5.817030 0.081000 0 -0.100000 -0.300000",
+        "type": "barricade"
+    },
+    "can_1":{
+        "pose":"6.376210 -6.898060 0 0 0 0",
+        "type": "Coke"
+    },
+    "can_6":{
+        "pose":"6.168280 -7.507190 0 0 0 0",
+        "type": "Coke"
+    },
+    "can_9":{
+        "pose":"6.945680 -7.310310 0 0 0 0",
+        "type": "Coke"
+    },
+    "can_11":{
+        "pose":"6.779940 -7.667300 0 0 0 0",
+        "type": "Coke"
+    },
+    "can_15":{
+        "pose":"6.349080 -8.039790 0 0 0 0",
+        "type": "Coke"
+    },
+    "can_16":{
+        "pose":"3.658030 -1.065570 0 0 0 0",
+        "type": "Coke"
+    },
+    "can_17":{
+        "pose":"6.254270 6.582090 0 0 0 0",
+        "type": "Coke"
+    },
+    "car_3":{
+        "pose":"2.485170 -5.649850 0 0 0 0",
+        "type": "car_blue"
+    },
+    "tree_1":{
+        "pose":"-0.761457 7.139250 0 0 0 0",
+        "type": "oak_tree_mini"
+    },
+    "tree_3":{
+        "pose":"-1.362430 7.320510 0 0 0 0",
+        "type": "oak_tree_mini"
+    },
+    "tree_6":{
+        "pose":"-0.858646 8.236420 0 0 0 0",
+        "type": "oak_tree_mini"
+    },
+    "car_5":{
+        "pose":"2.778630 3.582720 0 0 0 0",
+        "type": "hatchback_red"
+    },
+    "car_6":{
+        "pose":"2.461530 6.356750 0 0 0 0",
+        "type": "car_blue"
+    },
+    "car_7":{
+        "pose":"3.127710 4.690750 0 0 0 0",
+        "type": "hatchback_red"
+    },
+    "car_9":{
+        "pose":"3.538780 7.775480 0 0 0 0",
+        "type": "hatchback_red"
+    },
+    "cone_2":{
+        "pose":"-13.753100 9.632810 0 0 0 0",
+        "type": "Construction_Cone_mini"
+    },
+    "cone_3":{
+        "pose":"-13.102600 9.781960 0 0 0 0",
+        "type": "Construction_Cone_mini"
+    },
+    "cone_4":{
+        "pose":"-13.508300 10.182100 0 0 0 0",
+        "type": "Construction_Cone_mini"
+    },
+    "cone_6":{
+        "pose":"-12.390000 10.460300 0 0 0 0",
+        "type": "Construction_Cone_mini"
+    },
+    "cone_7":{
+        "pose":"-11.656000 10.228900 0 0 0 0",
+        "type": "Construction_Cone_mini"
+    }
+}
