@@ -239,7 +239,7 @@ class LineFollower(Node):
 			# TODO: participants need to decide action on detection of obstacle.
 			# print("obstacle detected")
 			turn = self.value
-			speed = 0.25
+			speed = 0.4
 			self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
 		
 

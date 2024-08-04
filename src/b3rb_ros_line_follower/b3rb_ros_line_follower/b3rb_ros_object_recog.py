@@ -24,6 +24,7 @@ import cv2
 import numpy as np
 
 from sensor_msgs.msg import CompressedImage
+import easyocr
 
 QOS_PROFILE_DEFAULT = 10
 
@@ -91,12 +92,11 @@ class ObjectRecognizer(Node):
 
 		#--------Aman's trial code---------
 
-		lower_red = np.array([0,0,65])
-		upper_red = np.array([0,5,80])
-		red_mask = cv2.inRange(image[int(image.shape[0]*0.65):], lower_red, upper_red)
-		if (np.sum(red_mask)>10):
-			traffic_status_message.stop_sign = True
-			
+
+		reader = easyocr.Reader(['en'], gpu=False)
+		text = reader.readtext(image)	
+		if(text == "STOP"):
+			self.get_logger().info("Stop sign detected")		
 
 		#-------trial code till here-----------
 		# self.publisher_traffic.publish(traffic_status_message)
