@@ -93,17 +93,10 @@ class ObjectRecognizer(Node):
 		#--------Aman's trial code---------
 
 
-<<<<<<< HEAD
-		reader = easyocr.Reader(['en'], gpu=False)
-		text = reader.readtext(image)	
-		if(text == "STOP"):
-			self.get_logger().info("Stop sign detected")		
-=======
 		# reader = easyocr.Reader(['en'], gpu=False)
 		# text = reader.readtext(image)	
 		# if(text == "STOP"):
 		# 	self.get_logger().info("Stop sign detected")		
->>>>>>> fcd352d (obstacle avoidance w/o stop sign detection)
 
 		#-------trial code till here-----------
 		# self.publisher_traffic.publish(traffic_status_message)
