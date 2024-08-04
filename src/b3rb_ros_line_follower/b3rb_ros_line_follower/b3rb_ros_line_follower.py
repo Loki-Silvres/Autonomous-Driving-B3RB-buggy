@@ -231,7 +231,7 @@ class LineFollower(Node):
 			# TODO: participants need to decide action on detection of ramp/bridge.
 			# speed = max(SPEED_MAX/4, speed)
 			speed = 0.6
-			self.time_now = time.time()
+			# self.time_now = time.time()
 			print("ramp/bridge detected")
 			# self.get_logger().info("ramp/bridge detected")
 
@@ -239,7 +239,11 @@ class LineFollower(Node):
 			# TODO: participants need to decide action on detection of obstacle.
 			# print("obstacle detected")
 			turn = self.value
+<<<<<<< HEAD
 			speed = 0.4
+=======
+			speed = max(0.1, 0.9 - min(abs(turn), 0.9))
+>>>>>>> fcd352d (obstacle avoidance w/o stop sign detection)
 			self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
 		
 
