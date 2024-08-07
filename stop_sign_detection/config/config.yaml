@@ -1,0 +1,6 @@
+path: /home/loki/stop_sign_detection/data
+train: images/train
+val: images/val
+
+names:
+  0: stop_sign
