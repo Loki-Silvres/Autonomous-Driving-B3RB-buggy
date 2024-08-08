@@ -238,7 +238,7 @@ class LineFollower(Node):
 		if self.obstacle_detected is True:
 			# TODO: participants need to decide action on detection of obstacle.
 			# print("obstacle detected")
-			turn = self.value
+			turn = self.value 
 			speed = max(0.1, 0.9 - min(abs(turn), 0.9))
 			self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
 		
@@ -290,6 +290,9 @@ class LineFollower(Node):
 		front_ranges = ranges[int(length * theta / PI): int(length * (PI - theta) / PI)]
 		side_ranges_right = ranges[0: int(length * theta / PI)]
 		side_ranges_left = ranges[int(length * (PI - theta) / PI):]
+
+		# side_ranges_right = ranges[0: int(length / 2)]
+		# side_ranges_left = ranges[int(length / 2):]
 
 
 		# message.ranges = [i/100 for i in range(len(message.ranges))]
@@ -357,7 +360,8 @@ class LineFollower(Node):
 				right_avg += side_ranges_right[i]
 			angle += message.angle_increment
 		# value = -value
-		if((left_avg-right_avg)!=0) :value = (-left_avg+right_avg)
+		if((left_avg-right_avg)!=0) :
+			value = (-left_avg+right_avg)
 		self.value = value/10
 
 		#---------commment till here to remove Aman's code-------------

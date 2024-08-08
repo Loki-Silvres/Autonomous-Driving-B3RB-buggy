@@ -19,12 +19,12 @@ import rclpy
 from rclpy.node import Node
 from synapse_msgs.msg import TrafficStatus
 from std_msgs.msg import Bool
+from ultralytics import YOLO
 
 import cv2
 import numpy as np
 
 from sensor_msgs.msg import CompressedImage
-import easyocr
 
 QOS_PROFILE_DEFAULT = 10
 
@@ -56,6 +56,7 @@ class ObjectRecognizer(Node):
 			'/ramp_detected',
 			QOS_PROFILE_DEFAULT)
 		
+		self.detector = YOLO("/home/loki/cognipilot/cranium/src/b3rb_ros_line_follower/best.pt")		
 
 	""" Analyzes the image received from /camera/image_raw/compressed to detect traffic signs.
 		Publishes the existence of traffic signs in the image on the /traffic_status topic.
@@ -90,6 +91,15 @@ class ObjectRecognizer(Node):
 			bool_msg.data = False
 			self.publisher_ramp_det.publish(bool_msg) 
 
+		results = self.detector(image, imgsz = 320)
+		for res in results:
+			boxes = (res.boxes)
+			if len(boxes.cls) > 0:
+				area = boxes.xywhn[:, 2] * boxes.xywhn[:, 3]
+				print("stop sign detected with area: ", area[0])
+				if area[0]>0.2:
+					traffic_status_message.stop_sign = True
+
 		#--------Aman's trial code---------
 
 
@@ -99,7 +109,7 @@ class ObjectRecognizer(Node):
 		# 	self.get_logger().info("Stop sign detected")		
 
 		#-------trial code till here-----------
-		# self.publisher_traffic.publish(traffic_status_message)
+		self.publisher_traffic.publish(traffic_status_message)
 
 			
 	

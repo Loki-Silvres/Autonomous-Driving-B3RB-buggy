@@ -84,8 +84,8 @@ def main():
         mv_wrld="cd "+curr_dir+"/AIM_2024_launcher && mv "+world_file_output+" "+curr_dir+"/src/dream_world/worlds/"+world_file_output
         print(mv_wrld)
         os.system(mv_wrld)
-        command = input("build the file y/N: ")
-        if(command=='y'):
+        command = input("build the file (y/N): ")
+        if((command.lower())=='y'):
             os.system("cd ~/cognipilot/cranium && rm -rf build")
             os.system("cd ~/cognipilot/cranium && rm -rf install")
             os.system("cd ~/cognipilot/cranium && rm -rf log")
