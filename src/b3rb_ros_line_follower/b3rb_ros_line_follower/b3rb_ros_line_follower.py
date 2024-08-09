@@ -45,9 +45,9 @@ SPEED_25_PERCENT = SPEED_MAX / 4
 SPEED_50_PERCENT = SPEED_25_PERCENT * 2
 SPEED_75_PERCENT = SPEED_25_PERCENT * 3
 
-THRESHOLD_OBSTACLE_VERTICAL = 0.7
-THRESHOLD_OBSTACLE_HORIZONTAL = 0.20
-THRESHOLD_RAMP = 0.5
+THRESHOLD_OBSTACLE_VERTICAL = 1.0
+THRESHOLD_OBSTACLE_HORIZONTAL = 0.10
+FREE_RANGE = 3.0
 
 MIN_FWD_VEL = 0.4
 MAX_FWD_VEL = 1.0
@@ -231,16 +231,17 @@ class LineFollower(Node):
 			# speed = max(SPEED_MAX/4, speed)
 			speed = 0.6
 			# self.time_now = time.time()
-			self.get_logger().info("ramp/bridge detected")
+			self.get_logger().info("bridge detected")
 			# self.get_logger().info("ramp/bridge detected")
 
 		if self.obstacle_detected is True:
 			# TODO: participants need to decide action on detection of obstacle.
 			# print("obstacle detected")
 			turn = self.value 
-			# speed = max(0.1, 0.9 - min(abs(turn), 0.9))
-			speed = 0.5
-			self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
+			speed = max(0.1, 0.6 - min(abs(turn), 0.6))
+			speed = 0.6*speed
+			# speed = 0.5
+		self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
 		
 
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
@@ -274,7 +275,7 @@ class LineFollower(Node):
 		# TODO: participants need to implement logic for detection of ramps and obstacles.
 		for i in range(len(message.ranges)):
 			if math.isinf(message.ranges[i]):
-				message.ranges[i] = 10.0
+				message.ranges[i] = 6.0
 		shield_vertical = 4
 		shield_horizontal = 1
 		theta = math.atan(shield_vertical / shield_horizontal)
@@ -298,25 +299,24 @@ class LineFollower(Node):
 		self.value = 0.0
 		self.obstacle_detected = False
 		self.ramp_detected = False
-		# for time when obstacle in front 
-		deg = int(len(front_ranges)/2)
+		deg = len(front_ranges)
+		# for time when obstacle in front
+		free_indices = []
 		for i in range(deg):
-			value += (front_ranges[i]-front_ranges[deg*2-i-1])/10
-			angle += message.angle_increment
-		value = value/deg
-
-		if(abs(value)>THRESHOLD_OBSTACLE_HORIZONTAL and abs(value)<THRESHOLD_OBSTACLE_VERTICAL):
-			self.obstacle_detected = True
-			self.get_logger().info("obstacle detected in front")
-			self.value = value
-			self.get_logger().info(f"value of turn: {value}")
-		elif(abs(value)<THRESHOLD_OBSTACLE_HORIZONTAL and abs(value)>0.07):
-			self.ramp_detected = True
-		self.get_logger().info(f"----------------------------------------")
-		# --------------alternate----------------------------
+			if(front_ranges[i]>FREE_RANGE): 
+				free_indices.append(int(deg/2)-i)
 		
-		# ---------------------------------------------------
-		# self.get_logger().info(f"value of turn: {value}")
+			angle += message.angle_increment
+		value = sum(free_indices)/(deg*2)
+
+		self.get_logger().info("obstacle detected in front")
+		if(self.ramp_detected is False):
+			self.value = value
+
+			# self.get_logger().info(f"value of turn: {value}")
+		self.get_logger().info("----------------------------------------")
+		
+		self.get_logger().info(f"value of turn: {value}")
 		#for the time when obstacles and no line
 		# left_avg = 0
 		# right_avg = 0	

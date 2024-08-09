@@ -56,7 +56,7 @@ class ObjectRecognizer(Node):
 			'/ramp_detected',
 			QOS_PROFILE_DEFAULT)
 		
-		self.detector = YOLO("/home/loki/cognipilot/cranium/src/b3rb_ros_line_follower/best.pt")		
+		self.detector = YOLO("/home/aman/cognipilot/cranium/src/b3rb_ros_line_follower/best.pt")		
 
 	""" Analyzes the image received from /camera/image_raw/compressed to detect traffic signs.
 		Publishes the existence of traffic signs in the image on the /traffic_status topic.
