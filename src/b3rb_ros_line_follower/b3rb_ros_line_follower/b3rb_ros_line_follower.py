@@ -222,10 +222,6 @@ class LineFollower(Node):
 			# deviation_y = half_height - middle_y
 			# speed = deviation_y / half_height
 
-		if (self.traffic_status.stop_sign is True):
-			speed = SPEED_MIN
-			self.get_logger().info("stop sign detected")
-
 		if self.ramp_detected is True: 
 			# TODO: participants need to decide action on detection of ramp/bridge.
 			# speed = max(SPEED_MAX/4, speed)
@@ -234,15 +230,17 @@ class LineFollower(Node):
 			self.get_logger().info("bridge detected")
 			# self.get_logger().info("ramp/bridge detected")
 
-		if self.obstacle_detected is True:
-			# TODO: participants need to decide action on detection of obstacle.
-			# print("obstacle detected")
+
+		if (self.traffic_status.stop_sign is True):
+			speed = SPEED_MIN
+
+		elif self.obstacle_detected is True:
+
 			turn = self.value 
 			speed = max(0.1, 0.6 - min(abs(turn), 0.6))
 			speed = 0.6*speed
 			# speed = 0.5
 		self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
-		
 
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
 		self.turn = self.beta * self.turn + (1-self.beta) * turn

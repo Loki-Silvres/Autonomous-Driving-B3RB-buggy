@@ -56,7 +56,7 @@ class ObjectRecognizer(Node):
 			'/ramp_detected',
 			QOS_PROFILE_DEFAULT)
 		
-		self.detector = YOLO("/home/aman/cognipilot/cranium/src/b3rb_ros_line_follower/best.pt")		
+		self.detector = YOLO("/home/loki/cognipilot/cranium/src/b3rb_ros_line_follower/best.pt")		
 
 	""" Analyzes the image received from /camera/image_raw/compressed to detect traffic signs.
 		Publishes the existence of traffic signs in the image on the /traffic_status topic.
@@ -95,20 +95,12 @@ class ObjectRecognizer(Node):
 		for res in results:
 			boxes = (res.boxes)
 			if len(boxes.cls) > 0:
+
 				area = boxes.xywhn[:, 2] * boxes.xywhn[:, 3]
-				print("stop sign detected with area: ", area[0])
-				if area[0]>0.2:
+				self.get_logger().info(f"stop sign detected with area: {area[0]}")
+				if area[0]>0.1:
 					traffic_status_message.stop_sign = True
 
-		#--------Aman's trial code---------
-
-
-		# reader = easyocr.Reader(['en'], gpu=False)
-		# text = reader.readtext(image)	
-		# if(text == "STOP"):
-		# 	self.get_logger().info("Stop sign detected")		
-
-		#-------trial code till here-----------
 		self.publisher_traffic.publish(traffic_status_message)
 
 			
