@@ -47,7 +47,7 @@ SPEED_75_PERCENT = SPEED_25_PERCENT * 3
 
 THRESHOLD_OBSTACLE_VERTICAL = 1.0
 THRESHOLD_OBSTACLE_HORIZONTAL = 0.10
-FREE_RANGE = 3.0
+FREE_RANGE = 1.0
 
 MIN_FWD_VEL = 0.4
 MAX_FWD_VEL = 1.0
@@ -111,16 +111,22 @@ class LineFollower(Node):
 		self.speed = 0.0
 		self.turn = 0.0
 		self.beta = 0.9
-		self.time_now = -100
+		self.time_now = time.time()
+		self.prev_ranges = None
+		self.prev_speed = 0
+		self.prev_turn = 0
+		self.stuck = False
 		# self.free_ranges = []/
 		#-----for Aman's code-----
-		self.value = 0.0
+		self.lidar_turn = 0.0
 		# ------till here---------
 
 		self.my_vel_timer = self.create_timer(
 			0.1, 
 			self.my_timer_callback
 			)
+		self.obstacle_detected = False
+		
 		#trying to get the free space using else
 		# self.min = 1e5
 		# self.max = 0
@@ -135,7 +141,7 @@ class LineFollower(Node):
 
 		self.speed += msg.linear.x
 		self.turn += msg.angular.z
-		self.get_logger().info(f"speed: {self.speed:.2f}, turn: {self.turn:.3f}")
+		self.get_logger().info(f"speed: {self.speed:.2f}, camera_turn: {self.turn:.3f}")
 		if self.speed>SPEED_MAX:
 			self.speed = SPEED_MAX
 		if self.speed<-SPEED_MAX:
@@ -151,25 +157,25 @@ class LineFollower(Node):
 		Args:
 			speed: the speed of the car in float. Range = [-1.0, +1.0];
 				Direction: forward for positive, reverse for negative.
-			turn: steer value of the car in float. Range = [-1.0, +1.0];
-				Direction: left turn for positive, right turn for negative.
+			camera_turn: steer value of the car in float. Range = [-1.0, +1.0];
+				Direction: left camera_turn for positive, right camera_turn for negative.
 
 		Returns:
 			None
 	"""
-	def rover_move_manual_mode(self, speed, turn):
+	def rover_move_manual_mode(self, speed, camera_turn):
 		msg = Joy()
 
 		msg.buttons = [1, 0, 0, 0, 0, 0, 0, 1]
 
-		msg.axes = [0.0, speed, 0.0, turn]
+		msg.axes = [0.0, speed, 0.0, camera_turn]
 
 		self.publisher_joy.publish(msg)
 
 	""" Analyzes edge vectors received from /edge_vectors to achieve line follower application.
 		It checks for existence of ramps & obstacles on the track through instance members.
 			These instance members are updated by the lidar_callback using LIDAR data.
-		The speed and turn are calculated to move the rover using rover_move_manual_mode.
+		The speed and camera_turn are calculated to move the rover using rover_move_manual_mode.
 
 		Args:
 			message: "~/cognipilot/cranium/src/synapse_msgs/msg/EdgeVectors.msg"
@@ -179,7 +185,7 @@ class LineFollower(Node):
 	"""
 	def edge_vectors_callback(self, message):
 		speed = self.speed
-		turn = self.turn
+		camera_turn = self.turn
 
 		vectors = message
 		half_width = vectors.image_width / 2
@@ -195,10 +201,10 @@ class LineFollower(Node):
 			# Calculate the magnitude of the x-component of the vector.
 			deviation_x = vectors.vector_1[1].x - vectors.vector_1[0].x
 			deviation_y = vectors.vector_1[1].y - vectors.vector_1[0].y
-			turn = deviation_x / vectors.image_width 
-			# turn += deviation_y / vectors.image_height
-			speed = max(MIN_FWD_VEL, 0.9 - min(abs(turn), 0.9))
-			turn *= 1.1
+			camera_turn = deviation_x / vectors.image_width 
+			# camera_turn += deviation_y / vectors.image_height
+			speed = max(MIN_FWD_VEL, 0.9 - min(abs(camera_turn), 0.9))
+			camera_turn *= 1.1
 
 			# self.get_logger().info(f"deviation:{deviation_x}")
 
@@ -209,9 +215,9 @@ class LineFollower(Node):
 			middle_x_right = (vectors.vector_2[0].x + vectors.vector_2[1].x) / 2
 			middle_x = (middle_x_left + middle_x_right) / 2
 			deviation_x = half_width - middle_x
-			turn = deviation_x / half_width
+			camera_turn = deviation_x / half_width
 
-			speed = 1 - min(abs(turn), 0.9)
+			speed = 1 - min(abs(camera_turn), 0.9)
 
 			# self.get_logger().info(f"middle_x_left:{middle_x_left:.2f}, middle_x_right:{middle_x_right:.2f}, middle_x:{middle_x:.2f}, deviation_x:{deviation_x:.2f}")
 
@@ -236,16 +242,45 @@ class LineFollower(Node):
 
 		elif self.obstacle_detected is True:
 
-			turn = self.value 
-			speed = max(0.1, 0.6 - min(abs(turn), 0.6))
-			speed = 0.6*speed
-			# speed = 0.5
-		self.get_logger().info(f"turn: {self.value:.3f}, speed: {speed:.3f}")
+			self.get_logger().info("obstacle detected")
+			camera_turn = max(camera_turn, self.lidar_turn)
+			camera_turn = self.lidar_turn
+			speed = max(0.3, 0.9 - min(abs(camera_turn), 0.9))
+			# speed = 0.7*speed
+			self.get_logger().info(f"lidar_turn: {self.lidar_turn:.3f}\t, speed: {speed:.3f}")
 
+		else:
+			self.get_logger().info(f"camera_turn: {camera_turn:.3f}\t, speed: {speed:.3f}")\
+			
+		
 		self.speed = self.beta * self.speed + (1-self.beta) * speed
-		self.turn = self.beta * self.turn + (1-self.beta) * turn
-		# self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, turn: {turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}")
-		self.rover_move_manual_mode(self.speed, turn)
+		self.turn = self.beta * self.turn + (1-self.beta) * camera_turn
+
+		self.get_logger().info(f"speed error = {np.abs(np.subtract(self.prev_speed, self.speed)).mean()}")
+		self.get_logger().info(f"turn error = {np.abs(np.subtract(self.prev_turn, self.turn)).mean()}")
+		
+		if np.abs(np.subtract(self.prev_speed, self.speed)).mean() < 0.001 and np.abs(np.subtract(self.prev_turn, self.turn)).mean() == 0.001:
+			self.stuck = True
+			self.get_logger().info("stuck")
+
+		else:
+			self.stuck = False
+			self.prev_speed= self.speed
+			self.prev_turn = self.turn
+
+		self.time_now = time.time()
+		if self.stuck:
+			self.get_logger().info("stuck")
+			speed = -speed
+			camera_turn = -self.lidar_turn
+			self.rover_move_manual_mode(speed, camera_turn)
+			while(time.time() - self.time_now < 2):
+				pass
+
+
+
+		# self.get_logger().info(f"self.speed: {self.speed:.3f}, self.turn: {self.turn:.3f}, camera_turn: {camera_turn:.3f}, speed: {speed:.3f}, self.ramp_detected: {self.ramp_detected}")
+		self.rover_move_manual_mode(self.speed, camera_turn)
 
 	""" Updates instance member with traffic status message received from /traffic_status.
 
@@ -274,7 +309,7 @@ class LineFollower(Node):
 		for i in range(len(message.ranges)):
 			if math.isinf(message.ranges[i]):
 				message.ranges[i] = 6.0
-		shield_vertical = 4
+		shield_vertical = 3.5
 		shield_horizontal = 1
 		theta = math.atan(shield_vertical / shield_horizontal)
 		resolution = 2*math.pi / len(message.ranges)
@@ -290,31 +325,46 @@ class LineFollower(Node):
 		side_ranges_right = ranges[0: int(length * theta / PI)]
 		side_ranges_left = ranges[int(length * (PI - theta) / PI):]
 
+		if self.prev_ranges is None:
+			self.prev_ranges = front_ranges
+
 		# process front ranges.
 		angle = theta - PI / 2
 		# --------------Aman's trial code----------------------------
 		value = 0.0
-		self.value = 0.0
-		self.obstacle_detected = False
+		self.lidar_turn = 0.0
+
 		self.ramp_detected = False
+		self.get_logger().info(f"front ranges: {front_ranges}")
+
 		deg = len(front_ranges)
 		# for time when obstacle in front
 		free_indices = []
+		flag= False
+		len_obstacles = 0
 		for i in range(deg):
+
 			if(front_ranges[i]>FREE_RANGE): 
-				free_indices.append(int(deg/2)-i)
-		
+				free_indices.append(- int(deg/2) + i + 1)
+			else:
+				flag = True
+				len_obstacles+=1
+				self.obstacle_detected = True
+				# free_indices.append(0)
 			angle += message.angle_increment
-		value = sum(free_indices)/(deg*2)
 
-		self.get_logger().info("obstacle detected in front")
-		if(self.ramp_detected is False):
-			self.value = value
-
-			# self.get_logger().info(f"value of turn: {value}")
+		if not flag:
+			self.obstacle_detected = False
+		value = sum(free_indices)/(deg*2) - 0.5
+		self.lidar_turn = 0.5 * np.sign(value)
+		if 0 == len(free_indices):
+			self.ramp_detected = True 
+		if(self.ramp_detected):
+			self.obstacle_detected = False
+			# self.get_logger().info(f"value of camera_turn: {value}")
 		self.get_logger().info("----------------------------------------")
 		
-		self.get_logger().info(f"value of turn: {value}")
+		
 		#for the time when obstacles and no line
 		# left_avg = 0
 		# right_avg = 0	
