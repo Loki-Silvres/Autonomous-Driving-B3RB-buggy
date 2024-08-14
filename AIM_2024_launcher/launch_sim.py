@@ -58,7 +58,8 @@ def main():
         for i in kill_list:
             str="pkill "+i
             os.system(str)
-    
+    if cmd_input[1].lower() == "stop":
+        os.system("killall -2 /usr/bin/python3")
     if cmd_input[1].lower() == "start":
         sleep(1)
 
