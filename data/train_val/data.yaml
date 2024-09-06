@@ -1,0 +1,8 @@
+#particpants need to devide the images into train,val and test categories themselves and 
+#then create suiatble folders and edit this yaml file
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 4
+names: ['left', 'right', 'stop', 'straight']
