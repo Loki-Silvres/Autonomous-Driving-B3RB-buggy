@@ -1,3 +1,4 @@
+
 # Copyright 2024 NXP
 
 # Copyright 2016 Open Source Robotics Foundation, Inc.
@@ -37,8 +38,8 @@ RED_COLOR = (0, 0, 255)
 BLUE_COLOR = (255, 0, 0)
 GREEN_COLOR = (0, 255, 0)
 
-VECTOR_IMAGE_HEIGHT_PERCENTAGE = 0.40  # Bottom portion of image to be analyzed for vectors.
-VECTOR_MAGNITUDE_MINIMUM = 2.5
+VECTOR_IMAGE_HEIGHT_PERCENTAGE = 0.25  # Bottom portion of image to be analyzed for vectors.
+VECTOR_MAGNITUDE_MINIMUM = 1.0
 
 
 class EdgeVectorsPublisher(Node):
@@ -74,7 +75,10 @@ class EdgeVectorsPublisher(Node):
 			CompressedImage,
 			"/debug_images/vector_image",
 			QOS_PROFILE_DEFAULT)
-
+		self.publisher_dilate_image = self.create_publisher(
+			CompressedImage,
+			"/debug_images/dialated_image",
+			QOS_PROFILE_DEFAULT)
 		self.image_height = 0
 		self.image_width = 0
 		self.lower_image_height = 0
@@ -191,14 +195,13 @@ class EdgeVectorsPublisher(Node):
 
 		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale image.
 		# Separate black (color of edges) pixels from the rest by applying threshold.
-		threshold_black = 50
-		thresh = cv2.threshold(gray, threshold_black, 255, cv2.THRESH_BINARY_INV)[1]
+		# threshold_black = 25
+		# thresh = cv2.threshold(gray, threshold_black, 255, cv2.THRESH_BINARY_INV)[1]
+		edges = cv2.Canny(gray,250,255,apertureSize = 3,L2gradient = True)
+		self.publish_debug_image(self.publisher_dilate_image,edges)
 
-		kernel = np.ones((5, 5), np.uint8)
-		dilated = cv2.dilate(thresh, kernel, iterations=5)
-		thresh = dilated
 
-		thresh = thresh[self.image_height - self.lower_image_height:]
+		thresh = edges[self.image_height - self.lower_image_height:]
 		image = image[self.image_height - self.lower_image_height:]
 		vectors, image = self.compute_vectors_from_image(image, thresh)
 
