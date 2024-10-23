@@ -297,8 +297,6 @@ class ObjectRecognizer(Node):
 
 			conf_thres = 0.25
 			iou_thres = 0.45
-			# classes = ['left', 'right', 'stop', 'straight']
-			# classes = [0.0,1.0,2.0,3.0]
 			classes = None
 			max_det = 1000
 			pred = non_max_suppression(pred, conf_thres, iou_thres, classes, False, max_det=max_det)
