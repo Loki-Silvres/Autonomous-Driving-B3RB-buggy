@@ -25,6 +25,7 @@ import time
 import numpy as np
 import math
 
+from std_msgs.msg import String
 from synapse_msgs.msg import EdgeVectors
 from synapse_msgs.msg import TrafficStatus
 from sensor_msgs.msg import LaserScan
@@ -39,6 +40,7 @@ RIGHT_TURN = -1.0
 
 TURN_MIN = 0.0
 TURN_MAX = 1.0
+SPEED_STOP = 0.0
 SPEED_MIN = 0.0
 SPEED_MAX = 1.0
 SPEED_25_PERCENT = SPEED_MAX / 4
@@ -49,8 +51,8 @@ THRESHOLD_OBSTACLE_VERTICAL = 1.0
 THRESHOLD_OBSTACLE_HORIZONTAL = 0.10
 FREE_RANGE = 1.0
 
-MIN_FWD_VEL = 0.4
-MAX_FWD_VEL = 1.0
+MIN_FWD_VEL = 0.1
+MAX_FWD_VEL = 0.5
 class LineFollower(Node):
 	""" Initializes line follower node with the required publishers and subscriptions.
 
@@ -91,17 +93,22 @@ class LineFollower(Node):
 			'/ramp_detected',
 			self.ramp_det_callback,
 			QOS_PROFILE_DEFAULT)
-		self.vel_sub = self.create_subscription(
-			Twist,
-			'/my_vel',
-			self.vel_callback,
-			QOS_PROFILE_DEFAULT
-		)
+		# self.vel_sub = self.create_subscription(
+		# 	Twist,
+		# 	'/my_vel',
+		# 	self.vel_callback,
+		# 	QOS_PROFILE_DEFAULT
+		# )
 		self.publish_front_lidar = self.create_publisher(
 			LaserScan,
 			'/front_scan',
 			QOS_PROFILE_DEFAULT
 			)
+		self.subscriber_signs = self.create_subscriber(
+			String,
+			'/signs',
+			self.signs_callback,
+			QOS_PROFILE_DEFAULT)
 
 		self.traffic_status = TrafficStatus()
 
@@ -116,15 +123,16 @@ class LineFollower(Node):
 		self.prev_speed = 0
 		self.prev_turn = 0
 		self.stuck = False
+		self.sign_name = 'None'
 		# self.free_ranges = []/
 		#-----for Aman's code-----
 		self.lidar_turn = 0.0
 		# ------till here---------
 
-		self.my_vel_timer = self.create_timer(
-			0.1, 
-			self.my_timer_callback
-			)
+		# self.my_vel_timer = self.create_timer(
+		# 	0.1, 
+		# 	self.my_timer_callback
+		# 	)
 		self.obstacle_detected = False
 		
 		#trying to get the free space using else
@@ -134,22 +142,41 @@ class LineFollower(Node):
 
 	def ramp_det_callback(self, msg: Bool) -> None:
 		self.ramp_detected = msg.data
-	def my_timer_callback(self):
-		self.rover_move_manual_mode(self.speed, self.turn)
+	# def my_timer_callback(self):
+	# 	self.rover_move_manual_mode(self.speed, self.turn)
+	
+	def signs_callback(self, msg: String):
+		self.sign_name = msg.data
+	
+	def sign_handler(self):
+		speed = MIN_FWD_VEL
+		turn = 0.0
+		sign = self.sign_name
 
-	def vel_callback(self, msg: Twist):
+		if sign == "left":
+			turn = LEFT_TURN
+		elif sign == "right":
+			turn = RIGHT_TURN
+		elif sign == 'stop':
+			speed = SPEED_STOP
+		elif sign == "straight":
+			turn = TURN_MIN
 
-		self.speed += msg.linear.x
-		self.turn += msg.angular.z
-		self.get_logger().info(f"speed: {self.speed:.2f}, camera_turn: {self.turn:.3f}")
-		if self.speed>SPEED_MAX:
-			self.speed = SPEED_MAX
-		if self.speed<-SPEED_MAX:
-			self.speed = -SPEED_MAX
-		if self.turn>TURN_MAX:
-			self.turn = TURN_MAX
-		if self.turn< -TURN_MAX:
-			self.turn = -TURN_MAX
+		return speed, turn
+
+	# def vel_callback(self, msg: Twist):
+
+	# 	self.speed += msg.linear.x
+	# 	self.turn += msg.angular.z
+	# 	self.get_logger().info(f"speed: {self.speed:.2f}, camera_turn: {self.turn:.3f}")
+	# 	if self.speed>SPEED_MAX:
+	# 		self.speed = SPEED_MAX
+	# 	if self.speed<-SPEED_MAX:
+	# 		self.speed = -SPEED_MAX
+	# 	if self.turn>TURN_MAX:
+	# 		self.turn = TURN_MAX
+	# 	if self.turn< -TURN_MAX:
+	# 		self.turn = -TURN_MAX
 
 
 	""" Operates the rover in manual mode by publishing on /cerebri/in/joy.
@@ -196,7 +223,7 @@ class LineFollower(Node):
 
 		# NOTE: participants may improve algorithm for line follower.
 		if (vectors.vector_count == 0) and (self.obstacle_detected==False):  # none.
-			speed = 0.3
+			speed = 0.1
 			# SPEED_MAX = 0.1
 
 		if (vectors.vector_count == 1):  # curve.
@@ -204,27 +231,30 @@ class LineFollower(Node):
 			deviation_x = vectors.vector_1[1].x - vectors.vector_1[0].x
 			# camera_turn = SPEED_MAX * deviation_x / vectors.image_width 
 			camera_turn = deviation_x / vectors.image_width 
-			camera_turn *= 10**(camera_turn)
+			# camera_turn *= 10**(camera_turn)
 
 			# camera_turn += deviation_y / vectors.image_height
-			speed = max(MIN_FWD_VEL, 0.9 * SPEED_MAX - min(abs(camera_turn), SPEED_MAX * 0.9))
-			if abs(camera_turn)>0.3:
+			# speed = max(MIN_FWD_VEL, 0.9 * SPEED_MAX - min(abs(camera_turn), SPEED_MAX * 0.9))
+			speed = 0.2
+			if (camera_turn)>0.3:
 				camera_turn = TURN_MAX
-			SPEED_MAX = 1.0
-			self.get_logger().info(f"one vector: {camera_turn}")
+			if camera_turn < -0.3:
+				camera_turn = -TURN_MAX
+			# SPEED_MAX = 1.0
+			self.get_logger().info(f"one vector camera turn: {camera_turn}")
 			# self.get_logger().info(f"deviation:{deviation_x}")
 
 		if (vectors.vector_count == 2):  # straight.
-			# Calculate the middle point of the x-components of the vectors.
+			# Calculate the middle point of the x-components of the vectors
 			middle_x_left = (vectors.vector_1[0].x + vectors.vector_1[1].x) / 2
 			middle_x_right = (vectors.vector_2[0].x + vectors.vector_2[1].x) / 2
 			middle_x = (middle_x_left + middle_x_right) / 2
 			deviation_x = half_width - middle_x
 			camera_turn = SPEED_MAX * deviation_x / half_width
 
-			speed = 0.6 - min(abs(camera_turn), 0.4)
+			speed = 0.5 - min(abs(camera_turn), 0.3)
 			speed = SPEED_MAX * speed 
-			self.get_logger().info(f"two vector: {self.turn}")
+			self.get_logger().info(f"two vector camera turn: {self.camera_turn}")
 
 			# self.get_logger().info(f"middle_x_left:{middle_x_left:.2f}, middle_x_right:{middle_x_right:.2f}, middle_x:{middle_x:.2f}, deviation_x:{deviation_x:.2f}")
 
@@ -244,6 +274,10 @@ class LineFollower(Node):
 
 		# if (self.traffic_status.stop_sign is True):
 		# 	speed = SPEED_MIN
+
+
+		if self.sign_name != 'None':
+			speed, turn = self.sign_handler()
 
 		# elif self.obstacle_detected is True:
 
