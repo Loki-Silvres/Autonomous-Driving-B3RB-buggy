@@ -1,0 +1,9 @@
+# train: /home/loki/B3RB_ENIAC/data/combined/train
+# val: /home/loki/B3RB_ENIAC/data/combined/valid
+# test: /home/loki/B3RB_ENIAC/data/test/aim_images/non_sign_images
+
+names: 
+  0: left
+  1: right
+  2: stop
+  3: straight

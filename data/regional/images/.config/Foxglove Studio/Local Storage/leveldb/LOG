@@ -1,0 +1,5 @@
+2024/08/02-00:20:19.649 47d5 Reusing MANIFEST /home/loki/snap/foxglove-studio/103/.config/Foxglove Studio/Local Storage/leveldb/MANIFEST-000001
+2024/08/02-00:20:19.649 47d5 Recovering log #6
+2024/08/02-00:20:19.650 47d5 Level-0 table #9: started
+2024/08/02-00:20:19.652 47d5 Level-0 table #9: 24783 bytes OK
+2024/08/02-00:20:19.655 47d5 Delete type=0 #6
